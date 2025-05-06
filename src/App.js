@@ -17,7 +17,8 @@ import {
   createNote as createNoteMutation,
   deleteNote as deleteNoteMutation,
 } from './graphql/mutations';
-import { Amplify, Storage } from 'aws-amplify';
+import { Amplify } from 'aws-amplify';
+import { getUrl, uploadData, remove } from '@aws-amplify/storage';
 import { generateClient } from 'aws-amplify/api';
 import config from './amplifyconfiguration.json';
 Amplify.configure(config);
@@ -37,9 +38,11 @@ const App = ({ signOut }) => {
     await Promise.all(
       notesFromAPI.map(async (note) => {
         if (note.image) {
-          const url = await Storage.get('notes', note.image);
+          const url = await getUrl({ path: "public/" + note.name });
           note.image = url;
         }
+        console.log('note', note);
+        console.log('url', note.image); 
         return note;
       })
     );
@@ -55,7 +58,10 @@ const App = ({ signOut }) => {
       description: form.get('description'),
       image: image.name,
     };
-    if (!!data.image) await Storage.put(data.name, image);
+    console.log('data', data);
+    if (!!data.image) {
+      await uploadData({ path: "public/" + data.name, data: image }).result;
+    }
     await API.graphql({
       query: createNoteMutation,
       variables: { input: data },
@@ -67,7 +73,7 @@ const App = ({ signOut }) => {
   async function deleteNote({ id, name }) {
     const newNotes = notes.filter((note) => note.id !== id);
     setNotes(newNotes);
-    await Storage.remove(name);
+    await remove({ path: "public/" + name });
     await API.graphql({
       query: deleteNoteMutation,
       variables: { input: { id } },
@@ -121,8 +127,8 @@ const App = ({ signOut }) => {
             <Text as="span">{note.description}</Text>
             {note.image && (
               <Image
-                src={note.image}
-                alt={`visual aid for ${notes.name}`}
+                src={"public/" + note.image}
+                alt={`visual aid for ${note.name}`}
                 style={{ width: 400 }}
               />
             )}
