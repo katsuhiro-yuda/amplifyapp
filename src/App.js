@@ -37,12 +37,12 @@ const App = ({ signOut }) => {
     const notesFromAPI = apiData.data.listNotes.items;
     await Promise.all(
       notesFromAPI.map(async (note) => {
-        if (note.image) {
-          const url = await getUrl({ path: "public/" + note.name });
-          note.image = url;
-        }
         console.log('note', note);
         console.log('url', note.image); 
+        if (note.image) {
+          const url = await getUrl({ path: "public/" + note.image });
+          note.image = url;
+        }
         return note;
       })
     );
@@ -60,7 +60,7 @@ const App = ({ signOut }) => {
     };
     console.log('data', data);
     if (!!data.image) {
-      await uploadData({ path: "public/" + data.name, data: image }).result;
+      await uploadData({ path: "public/" + image.name, data: image }).result;
     }
     await API.graphql({
       query: createNoteMutation,
@@ -127,7 +127,7 @@ const App = ({ signOut }) => {
             <Text as="span">{note.description}</Text>
             {note.image && (
               <Image
-                src={"public/" + note.image}
+                src={note.image.url.href}
                 alt={`visual aid for ${note.name}`}
                 style={{ width: 400 }}
               />
